@@ -3,6 +3,12 @@ import * as exp from 'constants';
 import * as XLSX from 'xlsx';
 import * as ExcelJS from 'exceljs'; 
 
+// 判断是否为 Excel 文件的链接格式
+export function isExcelLink(link: string): boolean {
+    return !!link.match(/\[\[([^#]+\.xls.?)(?:#([^!|]+)?)?(?:!([^|]+))?\]\]/);
+}
+
+
 // 解析 Excel 引用格式
 export function parseExcelReference(link: string):  {bookname: string, sheetname: string, range: string} | null {
     //let match = decodeURIComponent(link).match(/\[\[([^#]+)(?:#([^!|]+))?(?:!([^|]+))?\]\]/);

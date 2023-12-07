@@ -86,34 +86,26 @@ export default class MyPlugin extends Plugin {
 		// 把 ![[test.xlsx#sheet1|a1:d4]] 解析为对应 Excel文件中指定区域的数据
 		this.registerMarkdownPostProcessor((el, ctx) => {
 			el.querySelectorAll('a').forEach((link) => {
-			  let match = link.href.match(/\[\[([^#]+)\#([^|]+)\|([^\]]+)\]\]/);
-			  if (match) {
-				let filePath = match[1];
-				let sheetName = match[2];
-				let range = match[3];
-	  
-				// 读取 Excel 文件
-				let workbook = XLSX.readFile(filePath);
-				let sheet = workbook.Sheets[sheetName];
-	  
-				// 提取指定区域的数据
-				let data = XLSX.utils.sheet_to_json(sheet, { range: range });
-	  
-				// 将数据插入到 Markdown 渲染后的 HTML 中
+				console.log('link：\n' + link)
+				if (exceldata.isExcelLink(link.href)) {
+					// 提取指定区域的数据
+					let data = exceldata.getExcelData(link.href);
+		
+					// 将数据插入到 Markdown 渲染后的 HTML 中
 				let table = document.createElement('table');
-				data.forEach((row: Record<string, any>) => {
-				  let tr = document.createElement('tr');
-				  Object.values(row).forEach((cell) => {
+				data.forEach((row) => {
+					let tr = document.createElement('tr');
+					Object.values(row).forEach((cell) => {
 					let td = document.createElement('td');
 					td.textContent = cell;
 					tr.appendChild(td);
-				  });
-				  table.appendChild(tr);
+					});
+					table.appendChild(tr);
 				});
 				link.replaceWith(table);
-			  }
+				}
 			});
-		  });
+		});
 	}
 
 	onunload() {
