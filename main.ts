@@ -1,4 +1,7 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import * as XLSX from 'xlsx';
+import * as exceldata from './exceldata';
+import * as test from './test';
 
 // Remember to rename these classes and interfaces!
 
@@ -17,9 +20,12 @@ export default class MyPlugin extends Plugin {
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Excel Viewer', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+			// new Notice(editor.getLine(editor.getCursor().line));
+			test.getText().then(text => {
+				new Notice(text);
+			});
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -76,6 +82,38 @@ export default class MyPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+
+		// 把 ![[test.xlsx#sheet1|a1:d4]] 解析为对应 Excel文件中指定区域的数据
+		this.registerMarkdownPostProcessor((el, ctx) => {
+			el.querySelectorAll('a').forEach((link) => {
+			  let match = link.href.match(/\[\[([^#]+)\#([^|]+)\|([^\]]+)\]\]/);
+			  if (match) {
+				let filePath = match[1];
+				let sheetName = match[2];
+				let range = match[3];
+	  
+				// 读取 Excel 文件
+				let workbook = XLSX.readFile(filePath);
+				let sheet = workbook.Sheets[sheetName];
+	  
+				// 提取指定区域的数据
+				let data = XLSX.utils.sheet_to_json(sheet, { range: range });
+	  
+				// 将数据插入到 Markdown 渲染后的 HTML 中
+				let table = document.createElement('table');
+				data.forEach((row: Record<string, any>) => {
+				  let tr = document.createElement('tr');
+				  Object.values(row).forEach((cell) => {
+					let td = document.createElement('td');
+					td.textContent = cell;
+					tr.appendChild(td);
+				  });
+				  table.appendChild(tr);
+				});
+				link.replaceWith(table);
+			  }
+			});
+		  });
 	}
 
 	onunload() {
@@ -120,8 +158,6 @@ class SampleSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
-
 		new Setting(containerEl)
 			.setName('Setting #1')
 			.setDesc('It\'s a secret')
@@ -129,7 +165,6 @@ class SampleSettingTab extends PluginSettingTab {
 				.setPlaceholder('Enter your secret')
 				.setValue(this.plugin.settings.mySetting)
 				.onChange(async (value) => {
-					console.log('Secret: ' + value);
 					this.plugin.settings.mySetting = value;
 					await this.plugin.saveSettings();
 				}));

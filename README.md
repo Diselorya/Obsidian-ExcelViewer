@@ -8,7 +8,6 @@ The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definiti
 **Note:** The Obsidian API is still in early alpha and is subject to change at any time!
 
 This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Changes the default font color to red using `styles.css`.
 - Adds a ribbon icon, which shows a Notice when clicked.
 - Adds a command "Open Sample Modal" which opens a Modal.
 - Adds a plugin setting tab to the settings page.
@@ -50,7 +49,8 @@ Quick starting guide for new plugin devs:
 ## How to use
 
 - Clone this repo.
-- `npm i` or `yarn` to install dependencies
+- Make sure your NodeJS is at least v16 (`node --version`).
+- `npm i` or `yarn` to install dependencies.
 - `npm run dev` to start compilation in watch mode.
 
 ## Manually installing the plugin
