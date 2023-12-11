@@ -1,11 +1,11 @@
 {
-	"id": "obsidian-excelviewer",
-	"name": "Excel Viewer",
+	"id": "excel-viewer",
+	"name": "ExcelViewer",
 	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "View Excel File in obsidian.",
+	"description": "View and embed Excel files in the Obsidian.",
 	"author": "Diselorya",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://github.com/Diselorya",
+	"fundingUrl": "https://github.com/Diselorya/Obsidian-ExcelViewer",
 	"isDesktopOnly": false
 }
