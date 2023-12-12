@@ -193,7 +193,7 @@ export function setLinkElWidth(linkEl: HTMLElement, width: number, pageWidth: nu
 	// 连接元素宽度不能小于 300px 或者 30% 的页面宽度
 	w = Math.max(w, Math.max(pageWidth * 0.2, 200));
 	// 设置链接元素的宽度
-	linkEl.style.width = w + 'px';
+	// linkEl.style.width = w + 'px';
 
 	console.log('设置链接元素的宽度：', w);
 }
