@@ -39,11 +39,32 @@ export async function excelEmbedding(app: App, leaf: WorkspaceLeaf, linkEl: HTML
     console.log("workbook", wb);
 
     // 创建一个表格显示 Excel 数据，并放入容器中
-    let tabEl = createTableFromWorkbooks(wb, info);
+    let tabEl = createTableFromWorkbooks(wb, info, linkEl);
 	containerEl.appendChild(tabEl);  
+	// 设置 table 的 name 为工作簿名称
+	tabEl.setAttribute("name", info.name ?? '');
 
 	// 设置容器的样式
 	xlstyle.setContainerStyle(containerEl, info);
+
+	// 如果指定了工作表名称，则切换至该工作表并隐藏切换页签
+	const tabTitleContainer = tabEl.querySelector(`.worksheet-names`) as HTMLDivElement;
+	const tabContainer = tabEl.querySelector(`.${C.WORKBOOK_EL_NAME}`) as HTMLDivElement;
+	const firstSheetName = wb.SheetNames[0];
+
+	console.log('最后切换一次工作表名称：', info?.sheetName);
+	if (info?.sheetName && tabContainer && firstSheetName) {
+		tabTitleContainer.style.display = 'none';
+		requestAnimationFrame(() => {
+			if (typeof info.sheetName === 'string') {
+				switchToWorksheet(tabContainer, info.sheetName, linkEl, info);
+			}
+		});
+	} else {
+		requestAnimationFrame(() => {
+			switchToWorksheet(tabContainer, firstSheetName, linkEl, info);
+		});
+	}
 
     console.log("renderContainerEl", containerEl);
 
@@ -51,7 +72,7 @@ export async function excelEmbedding(app: App, leaf: WorkspaceLeaf, linkEl: HTML
 }
 
 
-function createTableFromWorkbooks(wb: XLSX.WorkBook, info?: xlinfo): HTMLDivElement {    
+function createTableFromWorkbooks(wb: XLSX.WorkBook, info?: xlinfo, linkEl?: HTMLElement): HTMLDivElement {    
     // 创建一个分页切换容器
     let tabContainer = document.createElement('div');
 	tabContainer.addClass(C.WORKBOOK_EL_NAME);
@@ -88,18 +109,18 @@ function createTableFromWorkbooks(wb: XLSX.WorkBook, info?: xlinfo): HTMLDivElem
         // 创建一个页签标题
         let tabTitle = document.createElement('button');
         tabTitle.textContent = sheetName;
+		(tabTitle as HTMLElement).style.marginTop = '8px'; // 设置上外边距
+		(tabTitle as HTMLElement).style.marginBottom = '8px'; // 设置下外边距
 
         // 当点击页签标题时，切换到对应的页签
         tabTitle.addEventListener('click', (event) => {   		
 			console.log('点击页签标题事件：', tabTitle);	
 
+			// 阻止原来的事件传播和默认行为
 			event.stopPropagation();
 			event.preventDefault();
 
-			switchToWorksheet(tabContainer, tabTitle.textContent ?? '');
-
-            // 显示当前页签
-            tab.style.display = 'block';
+			switchToWorksheet(tabContainer, tabTitle.textContent ?? '', linkEl, info);
         });
 
         // 将页签标题添加到页签标题容器中
@@ -110,28 +131,47 @@ function createTableFromWorkbooks(wb: XLSX.WorkBook, info?: xlinfo): HTMLDivElem
 	tabContainer.style.width = '100%';
 	tabContainer.style.height = '100%';
 
-    // 默认显示第一个分页
-    if (tabContainer.firstChild) {
-        switchToWorksheet(tabContainer, (tabContainer.firstChild as HTMLElement).getAttribute('name') ?? '');
-    }
-
     // 将页签标题容器添加到分页切换容器的顶部
 	xlstyle.setTabTitleStyle(tabTitleContainer);
 	tabContainer.insertBefore(tabTitleContainer, tabContainer.firstChild);
 
-	// 如果指定了工作表名称，则切换至该工作表并隐藏切换页签
-	console.log('工作表名称：', info?.sheetName);
-	if (info?.sheetName) {
-		switchToWorksheet(tabContainer, info.sheetName);
-		tabTitleContainer.style.display = 'none';
-	}
+    // 默认显示第一个分页
+	const firstSheetName = wb.SheetNames[0];
+    if (tabContainer.firstChild) {
+        switchToWorksheet(tabContainer, firstSheetName, linkEl, info);
+    }
 
     return tabContainer;
 }
 
+// 获取当前激活的标签页
+function getActiveTabEl(tabContainer: HTMLElement): HTMLElement | null {
+	for (let child of Array.from(tabContainer.children)) {
+	  if ((child as HTMLElement).style.display !== 'none') {
+		return child as HTMLElement;
+	  }
+	}
+	return null;
+}
+
+// 获取当前激活的标签页的名称
+function getActiveTabName(tabContainer: HTMLElement): string | null {
+	const activeTabEl = getActiveTabEl(tabContainer);
+	return activeTabEl?.getAttribute('name') ?? null;
+}
+
+// 获取当前激活的标签页的实际宽度
+function getActiveTabWidth(tabContainer: HTMLElement): number | null {
+	const activeTabEl = getActiveTabEl(tabContainer);
+	return activeTabEl?.scrollWidth ?? null;
+}
+
 // 切换到指定的工作表
-function switchToWorksheet(tabContainer: HTMLDivElement, sheetName: string) {
+function switchToWorksheet(tabContainer: HTMLDivElement, sheetName: string, linkEl?: HTMLElement, info?: xlinfo) {
 	console.log('切换到工作表.tabContainer：', tabContainer);
+
+	if (!tabContainer?.children) return;
+
 	// 遍历所有分页
 	for (let child of Array.from(tabContainer.children)) {
 		console.log('切换到工作表.child：', child);
@@ -142,11 +182,28 @@ function switchToWorksheet(tabContainer: HTMLDivElement, sheetName: string) {
 			if (child.getAttribute('name') === sheetName) {
 				// 切换到该分页
 				(child as HTMLElement).style.display = 'block';
+
+				console.log('判断是否根据工作表宽度调整容器宽度：', linkEl, info, (linkEl && (!info?.size.width)));
+
+				// 设置链接元素的宽度为链接元素当前宽度和工作表实际宽度的最小值
+				if (linkEl && (!info?.size.width)) {	
+					// 获取 child 下 class==C.WORKSHEET_EL_NAME 的元素
+					const ws = (Array.from(child.children).find(c => c.classList.contains(C.WORKSHEET_EL_NAME)) as HTMLTableElement);			
+					console.log('Worksheet 页面的宽度.switch.before：', linkEl.offsetWidth);
+					console.log('Worksheet 表格的实际像素宽度.switch.before：', ws.offsetWidth);		
+					requestAnimationFrame(() => {
+						console.log('Worksheet 页面的宽度.switch.after：', linkEl.offsetWidth);
+						console.log('Worksheet 表格的实际像素宽度.switch.after：', ws.offsetWidth);
+						console.log('Worksheet 表格的最适合宽度.display：', linkEl.style.display, ws.style.display);
+						xlstyle.setLinkElWidthByTable(ws, linkEl);
+					});
+				}
 			} else {
 				// 隐藏其他分页
 				(child as HTMLElement).style.display = 'none';
 			}
 		} else {
+			// 处理页签标题按钮
 			for (let btn of Array.from(child.children)) {
 				// 如果当前分页是要切换的工作表
 				if (btn.textContent === sheetName) {
@@ -161,6 +218,13 @@ function switchToWorksheet(tabContainer: HTMLDivElement, sheetName: string) {
 			}
 		}
 	}
+
+	// if (linkEl) {
+	// 	// 设置链接元素居中显示
+	// 	console.log('设置链接元素居中显示：', linkEl);
+	// 	linkEl.style.marginLeft = 'auto';
+	// 	linkEl.style.marginRight = 'auto';
+	// }
 }
 
 // 创建一个表格，装入 XLSX.WORKSHEET 类型的数据，并返回该表格
@@ -214,4 +278,20 @@ function createTableFromWorksheet(worksheet: XLSX.WorkSheet, info?: xlinfo): HTM
 
     // 返回创建的表格
     return tableEl;
+}
+
+
+// 获取上级元素中最近处的 ".internal-embed" 元素，没用，取不到上级元素
+function getInternalEmbedEl(el: HTMLElement): HTMLElement | null {
+	console.log('获取上级元素中最近处的 ".internal-embed" 元素.el：', el);
+	let parent = el.parentElement;
+	console.log('获取上级元素中最近处的 ".internal-embed" 元素.parent：', parent);
+	while (parent) {
+		console.log('获取上级元素中最近处的 ".internal-embed" 元素.parent：', parent);
+		if (parent.classList.contains('internal-embed')) {
+			return parent as HTMLElement;
+		}
+		parent = parent.parentElement;
+	}
+	return null;
 }

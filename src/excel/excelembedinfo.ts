@@ -51,6 +51,8 @@ export default class ExcelEmbedInfo {
 		console.log("ExcelEmbedInfo.loadFromObLink", matches);
 
         this.isExcel = this.isExcelLink(oblink);
+
+        // 文件名和工作表名真有可能以空格开头或结尾
 		this.name = bookname;
 		this.sheetName = sheetName;
 
@@ -61,6 +63,7 @@ export default class ExcelEmbedInfo {
 
         if (range)
         {
+            range = range.trim();
             this.range = (
                     (range.match(C.EXCEL_RANGE_A1_REGEX) != null)
                     || (range.match(C.EXCEL_RANGE_R1C1_REGEX) != null)
@@ -68,8 +71,8 @@ export default class ExcelEmbedInfo {
         }
             
         // Obsidian 的链接中，“|” 后面的数据会被放在 alt 属性里，而不是 src
-        if (sizeStr) size = sizeStr;
-        const s = size?.match(C.EMBED_SIZE_REGEX);
+        if (sizeStr) size = sizeStr.trim();
+        const s = size?.trim().match(C.EMBED_SIZE_REGEX);
 		if (s) {
             this.size = {
                 width: parseInt(s[1]),
@@ -85,9 +88,16 @@ export default class ExcelEmbedInfo {
 	}
 
 	loadFormLinkEl(linkEl: HTMLElement, app?: App): boolean {
+        console.log("ExcelEmbedInfo.loadFormLinkEl", linkEl);
+
 		const src = linkEl.getAttribute("src");
+        console.log("ExcelEmbedInfo.loadFormLinkEl.src", src);
 		if (!src) return false;
-		const size = linkEl.getAttribute("alt");
+
+        // 尺寸可能会被提取到 alt 属性中，也可能是一些其他的信息
+		const alt = linkEl.getAttribute("alt");
+        const size = alt?.match(C.EMBED_SIZE_REGEX_STRICT)?.[0];
+        console.log("ExcelEmbedInfo.loadFormLinkEl.alt", size);
 
 		return this.loadFromObLink(src, size, app);
 	}

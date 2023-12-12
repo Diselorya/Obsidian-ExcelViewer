@@ -1,4 +1,5 @@
 import xlinfo from "./excelembedinfo";
+import * as C from "../constants";
 
 // 设置表格样式
 export function setTableStyle(
@@ -119,6 +120,80 @@ export function setTabTitleStyle(tabTitle: HTMLDivElement) {
     const buttons = tabTitle.querySelectorAll('button');
     buttons.forEach(button => {
         // button.style.clipPath = 'polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%)';
-        // button.style.borderRadius = '5px';
+        button.style.borderRadius = '5px';
     });
+}
+
+// 通过表格元素设置嵌入链接区域的宽度
+export function setLinkElWidthByTable(tabEl: HTMLTableElement, linkEl: HTMLElement) {
+	// 重置 linkEl 的宽度为 auto，否则会导致一次比一次小
+    console.log('Worksheet 表格的最适合宽度：', tabEl);
+	linkEl.style.width = 'auto'
+    tabEl.style.width = 'max-content';
+    console.log('Worksheet 页面的宽度.before：', linkEl.offsetWidth);
+    console.log('Worksheet 表格的实际像素宽度.before：', tabEl.offsetWidth);
+
+	// requestAnimationFrame 是一个浏览器提供的 API
+	// 它接受一个回调函数作为参数，并在下一次浏览器重绘之前调用这个回调函数。
+	// 这意味着当你的回调函数被调用时，所有的 DOM 更新（包括元素的渲染）都已经完成。
+	// 如果直接写逻辑，会导致获取到的宽度不正确，因为此时 DOM 还没有渲染完成
+	// requestAnimationFrame(() => {
+		const pageWidth = linkEl.offsetWidth;
+		const wsWidth = tabEl.offsetWidth + 16;
+        console.log('Worksheet 页面的宽度.after', pageWidth);
+		console.log('Worksheet 表格的实际像素宽度.after', wsWidth);
+        console.log('Worksheet 表格的最适合宽度.display：', linkEl.style.display, tabEl.style.display);
+		setLinkElWidth(linkEl, wsWidth, pageWidth);
+	// });
+
+	// requestAnimationFrame(() => {
+		// 如果调整宽度后 linkEl 的宽度仍然大于表格实际宽度，则 linkEl 的类子元素均居中显示
+		if (linkEl.offsetWidth > tabEl.offsetWidth) {
+			const wss = linkEl.querySelectorAll(`.${C.WORKSHEET_EL_NAME}`);
+			console.log('设置子元素居中显示：', wss);
+			for (let e of Array.from(wss)) {
+				console.log('设置子元素居中显示：', e);
+				(e as HTMLElement).style.marginLeft = 'auto';
+				(e as HTMLElement).style.marginRight = 'auto';
+			}
+
+			const els = linkEl.querySelectorAll(`.worksheet-names`);
+			console.log('设置子元素居中显示：', els);
+			for (let e of Array.from(els)) {
+				console.log('设置子元素居中显示：', e);
+				(e as HTMLElement).style.display = 'flex';
+				(e as HTMLElement).style.justifyContent = 'center';
+				(e as HTMLElement).style.alignItems = 'center';
+			}
+		} else {
+			const wss = linkEl.querySelectorAll(`.${C.WORKSHEET_EL_NAME}`);
+			console.log('设置子元素居中显示：', wss);
+			for (let e of Array.from(wss)) {
+				console.log('设置子元素居中显示：', e);
+				(e as HTMLElement).style.marginLeft = '';
+				(e as HTMLElement).style.marginRight = '';
+			}
+
+			const els = linkEl.querySelectorAll(`.worksheet-names`);
+			console.log('设置子元素居中显示：', els);
+			for (let e of Array.from(els)) {
+				console.log('设置子元素居中显示：', e);
+				(e as HTMLElement).style.display = '';
+				(e as HTMLElement).style.justifyContent = '';
+				(e as HTMLElement).style.alignItems = '';
+			}
+		}
+	// });
+}
+
+// 设置嵌入链接区域的宽度
+export function setLinkElWidth(linkEl: HTMLElement, width: number, pageWidth: number) {
+	// 设置链接元素的宽度为链接元素当前宽度和工作表实际宽度的最小值
+	let w = Math.min(linkEl.offsetWidth, width);
+	// 连接元素宽度不能小于 300px 或者 30% 的页面宽度
+	w = Math.max(w, Math.max(pageWidth * 0.2, 200));
+	// 设置链接元素的宽度
+	linkEl.style.width = w + 'px';
+
+	console.log('设置链接元素的宽度：', w);
 }

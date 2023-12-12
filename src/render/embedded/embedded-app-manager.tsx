@@ -4,6 +4,7 @@ import {
 	getEmbeddedExcelLinkEls,
 	hasLoadedEmbeddedExcel,
 } from "./embed-utils";
+import * as C from "../../constants";
 
 import * as xlembed from "../../excel/excelembed";
 
@@ -112,4 +113,5 @@ const processLinkEl = async (
 
 	// Excel 数据处理
 	xlembed.excelEmbedding(app, leaf, linkEl);
+
 };

@@ -12,6 +12,7 @@ export const EXCEL_RANGE_A1_REGEX = /(?:\$)?([a-zA-Z]+)(?:\$)?([0-9]+)(?:[:：](
 export const EXCEL_RANGE_R1C1_REGEX = /(?:[rR])(\[?[0-9]+\]?)(?:[cC])(\[?[0-9]+\]?)(?:[:：](?:[rR])(\[?[0-9]+\]?)(?:[cC])(\[?[0-9]+\]?))?/
 
 export const EMBED_SIZE_REGEX = /(\d+)(?:\D(\d+))?/
+export const EMBED_SIZE_REGEX_STRICT = /^(\d+)(?:\D(\d+))?$/
 
 
 /**
